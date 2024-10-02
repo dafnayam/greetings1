@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>כרטיס גירוד - מדפנה ים</title>
+    
+    <!-- Meta Tags for WhatsApp and Social Media -->
+    <meta property="og:title" content="כרטיס גירוד - שנה טובה!">
+    <meta property="og:description" content="מאחלת לכם שנה טובה עם כרטיס גירוד מיוחד! גלו את ההפתעה שבפנים!">
+    <meta property="og:image" content="https://i.ibb.co/Cbg4WyZ/firstphoto.png">
+    <meta property="og:url" content="https://dafnayam.github.io/greeting2025/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 10px;
+        }
+        #scratchCard {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 9 / 11;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #scratchCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .background-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+            z-index: 1;
+        }
+        .scratch-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 3;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+            animation: blink 1s infinite alternate;
+        }
+        @keyframes blink {
+            0% { color: #FFD700; }
+            100% { color: #FFA500; }
+        }
+        .instruction,
+        .scratch-text,
+        .footer {
+            color: #666;
+            font-size: 18px;
+        }
+        #errorMessage {
+            color: red;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .hidden {
+            opacity: 0;
+        }
+        /* התאמות רספונסיביות */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 20px;
+            }
+            .instruction,
+            .scratch-text,
+            .footer {
+                font-size: 16px;
+            }
+            .container {
+                padding: 5px;
+            }
+            #scratchCard {
+                max-width: 100%;
+                aspect-ratio: 9 / 11;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="scratchCard">
+            <img id="backgroundImage" class="background-image" src="https://i.ibb.co/RzXXPfv/111.png" alt="Hidden Image">
+            <canvas id="scratchCanvas"></canvas>
+            <div id="scratchContent" class="scratch-content">
+                <h1 id="topTitle">מדפנה ים</h1>
+                <p id="instruction" class="instruction">יש לגרד את הכרטיס לגילוי מלא!</p>
+                <div id="scratchText" class="scratch-text">גרדו כאן</div>
+                <p id="footer" class="footer">באהבה רבה</p>
+            </div>
+        </div>
+        <div id="errorMessage"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('scratchCanvas');
+            const ctx = canvas.getContext('2d');
+            const scratchCard = document.getElementById('scratchCard');
+            const topTitle = document.getElementById('topTitle');
+            const instruction = document.getElementById('instruction');
+            const scratchText = document.getElementById('scratchText');
+            const footer = document.getElementById('footer');
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
+
+            // Set canvas size to match the parent element's size
+            function resizeCanvas() {
+                canvas.width = scratchCard.clientWidth;
+                canvas.height = scratchCard.clientHeight;
+                drawScratchLayer();
+            }
+
+            // Draw the pink scratch layer
+            function drawScratchLayer() {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = '#FFE5E5';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // Resize canvas when the window is resized
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+            });
+
+            // Initial setup
+            resizeCanvas();
+
+            // Add event listeners for scratching
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', scratch);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            canvas.addEventListener('touchstart', handleTouchStart);
+            canvas.addEventListener('touchmove', handleTouchMove);
+            canvas.addEventListener('touchend', stopDrawing);
+
+            canvas.addEventListener('dblclick', revealAll);
+
+            function startDrawing(e) {
+                isDrawing = true;
+                const { offsetX, offsetY } = getOffset(e);
+                [lastX, lastY] = [offsetX, offsetY];
+
+                // Hide other texts except the top title
+                instruction.classList.add('hidden');
+                scratchText.classList.add('hidden');
+                footer.classList.add('hidden');
+            }
+
+            function scratch(e) {
+                if (!isDrawing) return;
+
+                const { offsetX, offsetY } = getOffset(e);
+
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(offsetX, offsetY);
+                ctx.lineWidth = 40;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+
+                [lastX, lastY] = [offsetX, offsetY];
+
+                checkRevealPercentage();
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+            }
+
+            function handleTouchStart(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                startDrawing({
+                    offsetX: touch.clientX - rect.left,
+                    offsetY: touch.clientY - rect.top
+                });
+            }
+
+            function handleTouchMove(e) {
+                e.preventDefault();
+                if (!isDrawing) return;
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                scratch({
+                    offsetX: touch.clientX - rect.left,
+                    offsetY: touch.clientY - rect.top
+                });
+            }
+
+            function revealAll() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            function checkRevealPercentage() {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const pixelData = imageData.data;
+                let transparentPixels = 0;
+
+                for (let i = 0; i < pixelData.length; i += 4) {
+                    if (pixelData[i + 3] === 0) {
+                        transparentPixels++;
+                    }
+                }
+
+                const revealPercentage = (transparentPixels / (canvas.width * canvas.height)) * 100;
+
+                if (revealPercentage > 50) {
+                    revealAll();
+                }
+            }
+
+            function getOffset(e) {
+                if (e.touches) {
+                    const touch = e.touches[0];
+                    const rect = canvas.getBoundingClientRect();
+                    return {
+                        offsetX: touch.clientX - rect.left,
+                        offsetY: touch.clientY - rect.top
+                    };
+                } else {
+                    return {
+                        offsetX: e.offsetX,
+                        offsetY: e.offsetY
+                    };
+                }
+            }
+        });
+    </script>
+</body>
+</html>
